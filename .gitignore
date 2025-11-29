@@ -1,0 +1,35 @@
+# PHP
+*.log
+*.cache
+*.tmp
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Dependencies (if using Composer)
+/vendor/
+
+# Database files
+*.sqlite
+*.db
+
+# Temporary files
+*.bak
+*.backup
+
