@@ -1,4 +1,3 @@
-
 /* 1. CONFIG & CONSTANTS */
 const APP_CONFIG = {
   selectors: {
@@ -7,7 +6,8 @@ const APP_CONFIG = {
     categoryFilter: '#category-filter',
     dateFilter: '#date-filter',
     mobileMenu: '.nav-menu',
-    hamburger: '.hamburger'
+    hamburger: '.hamburger',
+    backToTop: '#backToTop' // Added for Back to Top button
   },
   messages: {
     validation: {
@@ -15,7 +15,7 @@ const APP_CONFIG = {
       emailRequired: 'البريد الإلكتروني مطلوب',
       emailInvalid: 'الرجاء إدخال بريد إلكتروني صحيح',
       passwordRequired: 'كلمة المرور مطلوبة',
-      passwordLength: 'يجب أن لا تقل كلمة المرور عن 6 أحرف',
+      passwordLength: 'يجب أن لا تقل كلمة المرور عن 8 أحرف',
       passwordMatch: 'الرجاء تأكيد كلمة المرور',
       passwordMismatch: 'كلمتا المرور غير متطابقتين',
       nameFirst: 'الاسم الأول مطلوب',
@@ -56,7 +56,6 @@ const APP_CONFIG = {
 
 /* 3. HELPERS */
 function validateEmail(email) {
-  // Improved but still reasonably permissive regex. Back-end must re-validate.
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
   return emailRegex.test(email);
 }
@@ -81,13 +80,22 @@ function clearFieldError(field) {
 function getElement(sel) {
   return document.querySelector(sel);
 }
+
 function getElements(sel) {
   return Array.from(document.querySelectorAll(sel));
 }
 
 function normalizeCategoryText(text = '') {
-  // Trim, lowercase and remove extra spaces/diacritics if needed (simple normalization)
   return text.toString().trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+// Helper: Check if form has any empty required fields
+function hasEmptyFields(form) {
+  const requiredInputs = form.querySelectorAll('input[required], textarea[required], select[required]');
+  for (let input of requiredInputs) {
+    if (!input.value.trim()) return true;
+  }
+  return false;
 }
 
 /* 4. FORM VALIDATION (login/register/contact) */
@@ -96,9 +104,17 @@ function validateLoginForm(e) {
   const email = form.querySelector('input[type="email"]');
   const password = form.querySelector('input[type="password"]');
   let ok = true;
+
   clearFieldError(email);
   clearFieldError(password);
 
+  // 1. Alert if any required field is empty (Shows Popup)
+  if (hasEmptyFields(form)) {
+    alert("Please fill out all required fields.");
+    ok = false;
+  }
+
+  // 2. Validate specific fields (Shows Inline Red Error)
   if (!email.value.trim()) {
     showFieldError(email, APP_CONFIG.messages.validation.emailRequired);
     ok = false;
@@ -106,6 +122,7 @@ function validateLoginForm(e) {
     showFieldError(email, APP_CONFIG.messages.validation.emailInvalid);
     ok = false;
   }
+  
   if (!password.value.trim()) {
     showFieldError(password, APP_CONFIG.messages.validation.passwordRequired);
     ok = false;
@@ -117,43 +134,36 @@ function validateLoginForm(e) {
 
 function validateRegisterForm(e) {
   const form = e.target;
-  const first = form.querySelector('[name="first_name"], #first-name');
-  const last = form.querySelector('[name="last_name"], #last-name');
+  const first = form.querySelector('[name="first_name"]');
+  const last = form.querySelector('[name="last_name"]');
   const email = form.querySelector('input[type="email"]');
-  const password = form.querySelector('[name="password"], #password');
-  const confirm = form.querySelector('[name="confirm_password"], #confirm-password');
+  const password = form.querySelector('[name="password"]');
+  const confirm = form.querySelector('[name="confirm_password"]');
 
   let ok = true;
   [first, last, email, password, confirm].forEach(clearFieldError);
 
-  if (!first || !first.value.trim()) {
-    showFieldError(first, APP_CONFIG.messages.validation.nameFirst); ok = false;
+  // 1. Alert if any required field is empty (Shows Popup)
+  if (hasEmptyFields(form)) {
+    alert("Please fill out all required fields.");
+    ok = false;
   }
-  if (!last || !last.value.trim()) {
-    showFieldError(last, APP_CONFIG.messages.validation.nameLast); ok = false;
-  }
-  if (!email || !email.value.trim()) {
-    showFieldError(email, APP_CONFIG.messages.validation.emailRequired); ok = false;
-  } else if (!validateEmail(email.value.trim())) {
-    showFieldError(email, APP_CONFIG.messages.validation.emailInvalid); ok = false;
-  }
-  if (!password || !password.value.trim()) {
-    showFieldError(password, APP_CONFIG.messages.validation.passwordRequired); ok = false;
-  } else if (password.value.length < 8) {
-    showFieldError(password, APP_CONFIG.messages.validation.passwordLength); ok = false;
-  }
-  if (!confirm || !confirm.value.trim()) {
-    showFieldError(confirm, APP_CONFIG.messages.validation.passwordMatch); ok = false;
-  } else if (password.value !== confirm.value) {
-    showFieldError(confirm, APP_CONFIG.messages.validation.passwordMismatch); ok = false;
-  }
+
+  // 2. Validate Fields (Shows Inline Red Errors)
+  if (!first.value.trim()) { showFieldError(first, APP_CONFIG.messages.validation.nameFirst); ok = false; }
+  if (!last.value.trim()) { showFieldError(last, APP_CONFIG.messages.validation.nameLast); ok = false; }
+  if (!email.value.trim()) { showFieldError(email, APP_CONFIG.messages.validation.emailRequired); ok = false; }
+  else if (!validateEmail(email.value.trim())) { showFieldError(email, APP_CONFIG.messages.validation.emailInvalid); ok = false; }
+  if (!password.value.trim()) { showFieldError(password, APP_CONFIG.messages.validation.passwordRequired); ok = false; }
+  else if (password.value.length < 8) { showFieldError(password, APP_CONFIG.messages.validation.passwordLength); ok = false; }
+  if (!confirm.value.trim()) { showFieldError(confirm, APP_CONFIG.messages.validation.passwordMatch); ok = false; }
+  else if (password.value !== confirm.value) { showFieldError(confirm, APP_CONFIG.messages.validation.passwordMismatch); ok = false; }
 
   if (!ok) e.preventDefault();
   return ok;
 }
 
 function validateContactForm(e) {
-  // Preventing default here is ok because contact form is handled via JS in your original file.
   e.preventDefault();
   const form = e.target;
   const name = form.querySelector('#contact-name');
@@ -164,6 +174,13 @@ function validateContactForm(e) {
   let ok = true;
   [name, email, subject, message].forEach(clearFieldError);
 
+  // 1. Alert if empty (Shows Popup)
+  if (hasEmptyFields(form)) {
+    alert("Please fill out all required fields.");
+    ok = false;
+  }
+
+  // 2. Validate Fields (Shows Inline Red Errors)
   if (!name.value.trim()) { showFieldError(name, APP_CONFIG.messages.validation.nameFull); ok = false; }
   if (!email.value.trim()) { showFieldError(email, APP_CONFIG.messages.validation.emailRequired); ok = false; }
   else if (!validateEmail(email.value.trim())) { showFieldError(email, APP_CONFIG.messages.validation.emailInvalid); ok = false; }
@@ -176,7 +193,7 @@ function validateContactForm(e) {
     return false;
   }
 
-  // If you prefer email-only contact, send via server. For demo, show success message client-side:
+  // Success path
   const resultDiv = getElement('#contact-message-result');
   if (resultDiv) {
     resultDiv.textContent = APP_CONFIG.messages.contact.success;
@@ -185,14 +202,12 @@ function validateContactForm(e) {
     form.reset();
     setTimeout(() => {
       resultDiv.style.display = 'none';
-      resultDiv.textContent = '';
       resultDiv.className = 'registration-message';
     }, 5000);
   } else {
     alert(APP_CONFIG.messages.contact.success);
     form.reset();
   }
-
   return true;
 }
 
@@ -209,6 +224,8 @@ function setupRealtimeValidation(form) {
     const input = ev.target;
     if (!input.matches('input, textarea')) return;
     const value = (input.value || '').trim();
+    
+    // Only show inline error on blur, do not alert
     if (input.required && !value) {
       if (input.type === 'email') showFieldError(input, APP_CONFIG.messages.validation.emailRequired);
       else showFieldError(input, APP_CONFIG.messages.validation.required);
@@ -219,7 +236,7 @@ function setupRealtimeValidation(form) {
       return;
     }
     clearFieldError(input);
-  }, true); // useCapture so blur is caught per element
+  }, true); 
 }
 
 /* 5. SEARCH & FILTERS */
@@ -227,12 +244,9 @@ function categoryMatches(cardCategoryText, selectedCategoryValue) {
   if (!selectedCategoryValue) return true;
   const cardNorm = normalizeCategoryText(cardCategoryText || '');
   const selected = normalizeCategoryText(selectedCategoryValue || '');
-  // try direct Arabic match
   if (cardNorm.includes(selected)) return true;
-  // try mapping english slug -> arabic then compare
   const mapped = APP_CONFIG.categoryMapping[selectedCategoryValue] || APP_CONFIG.categoryMapping[selected];
   if (mapped && normalizeCategoryText(mapped).includes(cardNorm)) return true;
-  // try using mapping reverse: if selected value is slug, compare card text to mapped Arabic
   if (mapped && normalizeCategoryText(cardCategoryText).includes(normalizeCategoryText(mapped))) return true;
   return false;
 }
@@ -263,13 +277,11 @@ function filterOpportunities() {
     const title = (card.querySelector('h3')?.textContent || '').toLowerCase();
     const desc = (card.querySelector('p')?.textContent || '').toLowerCase();
     const cat = (card.querySelector('.category')?.textContent || '').toLowerCase();
-
     const matchesSearch = !term || title.includes(term) || desc.includes(term);
     const matchesCategory = categoryMatches(cat, selectedCategory);
 
     if (matchesSearch && matchesCategory) {
       card.style.display = '';
-      // rely on CSS transitions; keep style changes minimal
       card.classList.remove('hidden-card');
       found = true;
     } else {
@@ -281,20 +293,17 @@ function filterOpportunities() {
   toggleNoResultsMessage(!found);
 }
 
-/* 6. OPPORTUNITY DETAIL (client-side populate for static demo pages) */
+/* 6. OPPORTUNITY DETAIL */
 function loadOpportunityDetail() {
   const url = new URL(window.location.href);
   const id = parseInt(url.searchParams.get('id') || '0', 10);
   if (!id) return;
-  // find in demo data (only for static demonstrations)
-  const opp = (detailedOpportunities || []).find(o => o.id === id);
-  if (!opp) {
-    const titleEl = getElement('#opportunity-title');
-    const descEl = getElement('#opportunity-description');
-    if (titleEl) titleEl.textContent = APP_CONFIG.messages.registration.notFoundTitle;
-    if (descEl) descEl.textContent = APP_CONFIG.messages.registration.notFoundDesc;
-    return;
-  }
+  
+  // This function is for static demo data. 
+  // In your PHP setup, the data comes from the server, so this might not find anything unless 'detailedOpportunities' exists.
+  const opp = (typeof detailedOpportunities !== 'undefined') ? detailedOpportunities.find(o => o.id === id) : null;
+  if (!opp) return; 
+
   const map = {
     title: '#opportunity-title',
     description: '#opportunity-description',
@@ -311,62 +320,33 @@ function loadOpportunityDetail() {
     if (!el) return;
     el.textContent = opp[k] || opp[k === 'category' ? 'category' : 'description'] || '-';
   });
-  // IMPORTANT: do NOT intercept the real registration <form> submission.
-  // If you want a confirm-before-submit UX, attach an onsubmit handler to the form,
-  // not to the button, and do not preventDefault unless you explicitly want to block the server call.
 }
 
-/* 7. PROFILE - dynamic rendering of registered events (client-side demo) */
-function createRegisteredOpportunityItem(opp, index = 0) {
-  const article = document.createElement('article');
-  article.className = 'opportunity-item';
-  article.innerHTML = `
-    <div class="item-content">
-      <h4>${escapeHtml(opp.title)}</h4>
-      <div class="item-meta">
-        <span class="date">${escapeHtml(opp.date)}</span>
-        <span class="location">${escapeHtml(opp.location)}</span>
-      </div>
-    </div>
-  `;
-  const cancelBtn = document.createElement('button');
-  cancelBtn.className = 'btn btn-danger';
-  cancelBtn.textContent = 'إلغاء التسجيل';
-  cancelBtn.addEventListener('click', () => {
-    if (!confirm(`هل أنت متأكد من رغبتك في إلغاء التسجيل في "${opp.title}"؟`)) return;
-    // If using server side, you should call API to cancel (fetch POST to cancel endpoint)
-    article.remove();
-    const container = getElement('.opportunities-list-profile');
-    if (container && container.children.length === 0) {
-      container.innerHTML = `<p class="empty-message">${APP_CONFIG.messages.profile.empty}</p>`;
-    }
-  });
-  article.appendChild(cancelBtn);
-  return article;
-}
+/* 7. PROFILE (Show/Hide Opportunities) */
+// Attached to window so onclick="..." works in HTML
+window.toggleOpportunities = function() {
+  const listWrapper = document.getElementById('opportunities-list-wrapper');
+  const msgWrapper = document.getElementById('hidden-message');
+  const btn = document.getElementById('toggle-btn');
 
-function toggleRegisteredOpportunities() {
-  const container = getElement('.opportunities-list-profile');
-  const loadBtn = getElement('#load-events-btn');
-  if (!container || !loadBtn) return;
-  const isExpanded = loadBtn.classList.contains('active');
-  if (isExpanded) {
-    container.innerHTML = `<p class="empty-message">${APP_CONFIG.messages.profile.hiddenMsg}</p>`;
-    loadBtn.textContent = APP_CONFIG.messages.profile.loadBtnInactive;
-    loadBtn.classList.remove('active');
+  if (!listWrapper || !msgWrapper || !btn) return;
+
+  if (listWrapper.style.display === 'none') {
+    // Show List
+    listWrapper.style.display = 'block';
+    msgWrapper.style.display = 'none';
+    btn.textContent = 'إخفاء فُرصي';
+    btn.classList.remove('btn-primary');
+    btn.classList.add('btn-secondary');
   } else {
-    container.innerHTML = '';
-    if (!mockRegisteredOpportunities || mockRegisteredOpportunities.length === 0) {
-      container.innerHTML = `<p class="empty-message">${APP_CONFIG.messages.profile.empty}</p>`;
-    } else {
-      mockRegisteredOpportunities.forEach((o, idx) => {
-        container.appendChild(createRegisteredOpportunityItem(o, idx));
-      });
-    }
-    loadBtn.textContent = APP_CONFIG.messages.profile.loadBtnActive;
-    loadBtn.classList.add('active');
+    // Hide List
+    listWrapper.style.display = 'none';
+    msgWrapper.style.display = 'block';
+    btn.textContent = 'عرض فُرصي';
+    btn.classList.remove('btn-secondary');
+    btn.classList.add('btn-primary');
   }
-}
+};
 
 /* 8. NAV & UI */
 function toggleMobileMenu() {
@@ -384,7 +364,6 @@ function closeMobileMenuOnClickOutside(event) {
   const hamburger = getElement(APP_CONFIG.selectors.hamburger);
   const navContainer = getElement('.nav-container');
   if (!navMenu || !navContainer || !hamburger) return;
-  // If nav is open and click is outside nav-container, close it
   if (navMenu.classList.contains('active') && !navContainer.contains(event.target)) {
     navMenu.classList.remove('active');
     hamburger.classList.remove('active');
@@ -392,31 +371,61 @@ function closeMobileMenuOnClickOutside(event) {
   }
 }
 
-/* 9. INIT / ATTACH EVENTS */
-function initMobileNavigation() {
-  const hamburger = getElement(APP_CONFIG.selectors.hamburger);
-  if (hamburger) hamburger.addEventListener('click', toggleMobileMenu);
-  document.addEventListener('click', closeMobileMenuOnClickOutside);
+function initBackToTop() {
+  const backToTopBtn = getElement(APP_CONFIG.selectors.backToTop);
+  if (!backToTopBtn) return;
+
+  // Show/Hide on Scroll
+  window.addEventListener('scroll', () => {
+    if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+      backToTopBtn.style.display = "flex";
+    } else {
+      backToTopBtn.style.display = "none";
+    }
+  });
+
+  // Scroll Up on Click
+  backToTopBtn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
 }
 
+/* 9. INIT / ATTACH EVENTS */
 function initFormValidation() {
-  // login form (server-side action)
-  const loginForm = document.querySelector('form[action="login_action.php"], form[action="login.php"], form[action="login_action.php"], form[action="login_action.php"]');
+  // Login form: add 'novalidate' to fix alert blocking
+  const loginForm = document.querySelector('form[action="login_action.php"], form[action="login.php"]');
   if (loginForm) {
+    loginForm.setAttribute('novalidate', 'novalidate');
     loginForm.addEventListener('submit', validateLoginForm);
     setupRealtimeValidation(loginForm);
   }
-  // register form
+  
+  // Register form: add 'novalidate'
   const registerForm = document.querySelector('form[action="register_action.php"], form[action="register.php"]');
   if (registerForm) {
+    registerForm.setAttribute('novalidate', 'novalidate');
     registerForm.addEventListener('submit', validateRegisterForm);
     setupRealtimeValidation(registerForm);
   }
-  // contact form (if client-side)
+  
+  // Contact form: add 'novalidate'
   const contactForm = getElement('#contact-form');
   if (contactForm) {
+    contactForm.setAttribute('novalidate', 'novalidate');
     contactForm.addEventListener('submit', validateContactForm);
     setupRealtimeValidation(contactForm);
+  }
+
+  // Edit Profile form: add 'novalidate' and basic check
+  const editProfileForm = document.querySelector('form[action="edit_profile_action.php"]');
+  if (editProfileForm) {
+    editProfileForm.setAttribute('novalidate', 'novalidate');
+    editProfileForm.addEventListener('submit', (e) => {
+      if (hasEmptyFields(e.target)) {
+        e.preventDefault();
+        alert("Please fill out all required fields.");
+      }
+    });
   }
 }
 
@@ -440,15 +449,20 @@ function initSearchAndFilters() {
 }
 
 function initOpportunityDetail() {
-  // Populate the page for static demo mode (doesn't block real server-side forms)
-  if (window.location.pathname.includes('opportunity_detail.php') || window.location.pathname.includes('opportunity_detail.html')) {
+  if (window.location.pathname.includes('opportunity_detail.php')) {
     loadOpportunityDetail();
   }
 }
 
 function initProfilePage() {
-  const loadBtn = getElement('#load-events-btn');
-  if (loadBtn) loadBtn.addEventListener('click', toggleRegisteredOpportunities);
+  // Using the new window.toggleOpportunities logic in Section 7, 
+  // so no event listener needed here unless using a different ID.
+}
+
+function initMobileNavigation() {
+  const hamburger = getElement(APP_CONFIG.selectors.hamburger);
+  if (hamburger) hamburger.addEventListener('click', toggleMobileMenu);
+  document.addEventListener('click', closeMobileMenuOnClickOutside);
 }
 
 /* 10. STARTUP */
@@ -459,18 +473,30 @@ function init() {
   initSearchAndFilters();
   initOpportunityDetail();
   initProfilePage();
+  initBackToTop(); // Start Back to Top logic
 }
 
-/* small utility used above */
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+function toggleOpportunities() {
+    const listWrapper = document.getElementById('opportunities-list-wrapper');
+    const msgWrapper = document.getElementById('hidden-message');
+    const btn = document.getElementById('toggle-btn');
+    if (listWrapper.style.display === 'none') {
+        // ACTION: SHOW THE LIST
+        listWrapper.style.display = 'block';     // Show list
+        msgWrapper.style.display = 'none';       // Hide text message        
+        btn.textContent = 'إخفاء فُرصي';         // Change text to "Hide"        
+        // Switch button color to Green (Secondary)
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-secondary'); 
+    } else {
+        // ACTION: HIDE THE LIST
+        listWrapper.style.display = 'none';      // Hide list
+        msgWrapper.style.display = 'block';      // Show text message        
+        btn.textContent = 'عرض فُرصي';           // Change text to "Show"        
+        // Switch button color back to Blue (Primary)
+        btn.classList.remove('btn-secondary');
+        btn.classList.add('btn-primary');
+    }
 }
 
-/* Run on DOM ready */
 document.addEventListener('DOMContentLoaded', init);
-
