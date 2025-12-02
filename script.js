@@ -54,12 +54,25 @@ const APP_CONFIG = {
   }
 };
 
-/* 3. HELPERS */
+/**
+ * Check whether a string is a syntactically valid email address.
+ * @param {string} email - The email address to validate.
+ * @returns {boolean} `true` if the string matches a basic email pattern, `false` otherwise.
+ */
 function validateEmail(email) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
   return emailRegex.test(email);
 }
 
+/**
+ * Shows an inline error for a form field.
+ *
+ * Adds an 'error' class to the supplied form control and appends a sibling
+ * <span class="error-message"> containing the provided message.
+ *
+ * @param {HTMLElement} field - The form control element (input, textarea, or select) to annotate.
+ * @param {string} message - The error message to display next to the field.
+ */
 function showFieldError(field, message) {
   if (!field) return;
   clearFieldError(field);
@@ -70,6 +83,10 @@ function showFieldError(field, message) {
   field.parentElement.appendChild(errorElement);
 }
 
+/**
+ * Remove visual error state and any inline error message associated with a form field.
+ * @param {HTMLElement|null|undefined} field - The form control element whose error state should be cleared; no action if falsy.
+ */
 function clearFieldError(field) {
   if (!field) return;
   field.classList.remove('error');
@@ -77,19 +94,37 @@ function clearFieldError(field) {
   if (existing) existing.remove();
 }
 
+/**
+ * Selects the first DOM element that matches the given CSS selector.
+ * @returns {Element|null} The first Element that matches `sel`, or `null` if no match.
+ */
 function getElement(sel) {
   return document.querySelector(sel);
 }
 
+/**
+ * Get all elements that match a CSS selector as an array.
+ * @param {string} sel - CSS selector string used to query the document.
+ * @return {Element[]} An array of matching Element objects; empty if no matches.
+ */
 function getElements(sel) {
   return Array.from(document.querySelectorAll(sel));
 }
 
+/**
+ * Normalize a category value into a lowercase, trimmed string with internal whitespace collapsed.
+ * @param {*} text - Value to normalize; coerced to a string if not already one.
+ * @returns {string} The normalized text: trimmed, lowercased, and consecutive whitespace collapsed to single spaces.
+ */
 function normalizeCategoryText(text = '') {
   return text.toString().trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
-// Helper: Check if form has any empty required fields
+/**
+ * Checks whether the given form contains any required inputs, textareas, or selects with empty values.
+ * @param {HTMLFormElement} form - The form element to inspect.
+ * @returns {boolean} `true` if any required field is empty (after trimming), `false` otherwise.
+ */
 function hasEmptyFields(form) {
   const requiredInputs = form.querySelectorAll('input[required], textarea[required], select[required]');
   for (let input of requiredInputs) {
@@ -98,7 +133,12 @@ function hasEmptyFields(form) {
   return false;
 }
 
-/* 4. FORM VALIDATION (login/register/contact) */
+/**
+ * Validate the login form's email and password inputs and block submission if validation fails.
+ * Shows inline field errors and a required-field alert when appropriate; prevents the event's default action on failure.
+ * @param {Event} e - The submit event from the login form.
+ * @returns {boolean} `true` if validation passes, `false` otherwise.
+ */
 function validateLoginForm(e) {
   const form = e.target;
   const email = form.querySelector('input[type="email"]');
@@ -132,6 +172,15 @@ function validateLoginForm(e) {
   return ok;
 }
 
+/**
+ * Validate registration form fields and show inline error messages when invalid.
+ *
+ * Performs required-field checks, email format validation, password length verification,
+ * and password/confirmation matching; displays inline errors for invalid fields and prevents
+ * the form submission when validation fails.
+ * @param {Event} e - Submit event from the registration form.
+ * @returns {boolean} `true` if the form passed validation, `false` otherwise.
+ */
 function validateRegisterForm(e) {
   const form = e.target;
   const first = form.querySelector('[name="first_name"]');
@@ -157,6 +206,16 @@ function validateRegisterForm(e) {
   return ok;
 }
 
+/**
+ * Validate the contact form, display inline error messages or a success message, and reset the form on success.
+ *
+ * Performs required-field checks, email format validation, scrolls to the first error when present,
+ * and either shows an inline success result element (if present) or falls back to an alert. Prevents the
+ * form's default submit behavior.
+ *
+ * @param {Event} e - Submit event from the contact form.
+ * @returns {boolean} `true` if validation passed and the form was processed and reset, `false` otherwise.
+ */
 function validateContactForm(e) {
   e.preventDefault();
   const form = e.target;
@@ -205,6 +264,15 @@ function validateContactForm(e) {
   return true;
 }
 
+/**
+ * Attach realtime inline validation to a form's inputs and textareas.
+ *
+ * Adds listeners that clear inline errors while the user types and display inline
+ * required/email validation messages when a field loses focus; valid fields have
+ * their inline errors removed.
+ *
+ * @param {HTMLFormElement|Element} form - The form element to wire realtime validation onto.
+ */
 function setupRealtimeValidation(form) {
   if (!form) return;
   form.addEventListener('input', (ev) => {
@@ -233,7 +301,14 @@ function setupRealtimeValidation(form) {
   }, true); 
 }
 
-/* 5. SEARCH & FILTERS */
+/**
+ * Determines whether a card's category text satisfies the currently selected category filter.
+ *
+ * Compares normalized forms of the card category and the selected category value; when a mapping for the selected value exists in APP_CONFIG.categoryMapping, that mapped label is considered as an additional match candidate. An empty or falsy selectedCategoryValue always matches.
+ * @param {string} cardCategoryText - Category text extracted from the opportunity card (may be empty or undefined).
+ * @param {string} selectedCategoryValue - The selected category filter value (internal key or display text).
+ * @returns {boolean} `true` if the card should be shown for the selected category, `false` otherwise.
+ */
 function categoryMatches(cardCategoryText, selectedCategoryValue) {
   if (!selectedCategoryValue) return true;
   const cardNorm = normalizeCategoryText(cardCategoryText || '');
@@ -245,6 +320,10 @@ function categoryMatches(cardCategoryText, selectedCategoryValue) {
   return false;
 }
 
+/**
+ * Toggle the no-results message inside the opportunities grid.
+ * @param {boolean} show - `true` to insert the configured no-results message into the grid, `false` to remove any existing no-results message.
+ */
 function toggleNoResultsMessage(show) {
   const container = getElement('.opportunities-grid');
   if (!container) return;
@@ -258,6 +337,14 @@ function toggleNoResultsMessage(show) {
   }
 }
 
+/**
+ * Filter visible opportunity cards using the current search input and selected category.
+ *
+ * Reads the search term and selected category from the configured selectors, hides cards whose
+ * title or description do not include the search term or whose category does not match the
+ * selected category, updates each card's display and `hidden-card` class, and toggles the
+ * no-results message based on whether any cards remain visible.
+ */
 function filterOpportunities() {
   const searchInput = getElement(APP_CONFIG.selectors.searchInput);
   const categoryFilter = getElement(APP_CONFIG.selectors.categoryFilter);
@@ -287,7 +374,14 @@ function filterOpportunities() {
   toggleNoResultsMessage(!found);
 }
 
-/* 6. OPPORTUNITY DETAIL */
+/**
+ * Populate opportunity detail fields in the DOM from a matching entry identified by the `id` URL parameter.
+ *
+ * Looks up an opportunity in the global `detailedOpportunities` array using the numeric `id` query parameter.
+ * If a matching entry is found, updates a fixed set of DOM elements (title, description, date, location, category,
+ * datetime, location detail, organizer, requirements) using predefined selectors. If `id` is missing or no entry is found,
+ * the function does nothing.
+ */
 function loadOpportunityDetail() {
   const url = new URL(window.location.href);
   const id = parseInt(url.searchParams.get('id') || '0', 10);
@@ -342,7 +436,12 @@ window.toggleOpportunities = function() {
   }
 };
 
-/* 8. NAV & UI */
+/**
+ * Toggle visibility of the mobile navigation menu and update hamburger state.
+ *
+ * Updates CSS active classes on the mobile menu and hamburger button and sets the hamburger's
+ * `aria-expanded` attribute to reflect the new open/closed state.
+ */
 function toggleMobileMenu() {
   const navMenu = getElement(APP_CONFIG.selectors.mobileMenu);
   const hamburger = getElement(APP_CONFIG.selectors.hamburger);
@@ -353,6 +452,10 @@ function toggleMobileMenu() {
   hamburger.setAttribute('aria-expanded', (!expanded).toString());
 }
 
+/**
+ * Close the mobile navigation menu when the user clicks outside the navigation container.
+ * @param {Event} event - The click event used to detect whether the target is outside the navigation container.
+ */
 function closeMobileMenuOnClickOutside(event) {
   const navMenu = getElement(APP_CONFIG.selectors.mobileMenu);
   const hamburger = getElement(APP_CONFIG.selectors.hamburger);
@@ -365,6 +468,11 @@ function closeMobileMenuOnClickOutside(event) {
   }
 }
 
+/**
+ * Initializes the back-to-top button: shows it when the page is scrolled past 300px and scrolls the viewport to the top when clicked.
+ *
+ * Attaches scroll and click listeners to the configured back-to-top element if present.
+ */
 function initBackToTop() {
   const backToTopBtn = getElement(APP_CONFIG.selectors.backToTop);
   if (!backToTopBtn) return;
@@ -384,7 +492,14 @@ function initBackToTop() {
   });
 }
 
-/* 9. INIT / ATTACH EVENTS */
+/**
+ * Attach validation behavior to available forms on the page.
+ *
+ * Adds the `novalidate` attribute and wires submit handlers and realtime validation to
+ * the login, register, and contact forms when present. For the edit-profile form,
+ * adds `novalidate` and a basic submit-time required-field check that blocks submission
+ * and shows an alert if any required fields are empty.
+ */
 function initFormValidation() {
   // Login form: add 'novalidate' to fix alert blocking
   const loginForm = document.querySelector('form[action="login_action.php"], form[action="login.php"]');
@@ -423,6 +538,11 @@ function initFormValidation() {
   }
 }
 
+/**
+ * Wires search and filter UI controls to trigger opportunity filtering.
+ *
+ * Attaches click, Enter-key, and change listeners to the configured search button, search input, category filter, and date filter so that filterOpportunities runs when the user interacts with those controls. Missing elements are ignored. 
+ */
 function initSearchAndFilters() {
   const searchBtn = getElement(APP_CONFIG.selectors.searchBtn);
   const searchInput = getElement(APP_CONFIG.selectors.searchInput);
@@ -442,24 +562,46 @@ function initSearchAndFilters() {
   if (dateFilter) dateFilter.addEventListener('change', filterOpportunities);
 }
 
+/**
+ * Initialize the opportunity detail view when the current path indicates the opportunity detail page.
+ *
+ * If the URL path contains "opportunity_detail.php", loads and populates the opportunity's details into the DOM.
+ */
 function initOpportunityDetail() {
   if (window.location.pathname.includes('opportunity_detail.php')) {
     loadOpportunityDetail();
   }
 }
 
+/**
+ * Initialize profile page UI and interactions.
+ *
+ * Currently a no-op; profile-specific interactions are provided by global handlers so no additional
+ * event listeners are attached here by default.
+ */
 function initProfilePage() {
   // Using the new window.toggleOpportunities logic in Section 7, 
   // so no event listener needed here unless using a different ID.
 }
 
+/**
+ * Initialize mobile navigation event handlers.
+ *
+ * Attaches a click listener to the hamburger button to toggle the mobile menu and
+ * a global click listener to close the mobile menu when clicking outside the navigation.
+ */
 function initMobileNavigation() {
   const hamburger = getElement(APP_CONFIG.selectors.hamburger);
   if (hamburger) hamburger.addEventListener('click', toggleMobileMenu);
   document.addEventListener('click', closeMobileMenuOnClickOutside);
 }
 
-/* 10. STARTUP */
+/**
+ * Initialize application UI behavior and attach global event listeners.
+ *
+ * Wires up navigation, form validation, search and filters, opportunity detail loading,
+ * profile interactions, and the back-to-top control so the page becomes interactive.
+ */
 function init() {
   console.log('Community Volunteer Hub initialized');
   initMobileNavigation();
@@ -470,6 +612,13 @@ function init() {
   initBackToTop(); // Start Back to Top logic
 }
 
+/**
+ * Toggle visibility of the user's opportunities list and update related UI state.
+ *
+ * Shows the list and hides the placeholder message when the list is currently hidden; hides the list and shows the placeholder message when the list is currently visible. Also updates the toggle button's text content and button styling.
+ *
+ * Targets elements with IDs 'opportunities-list-wrapper', 'hidden-message', and 'toggle-btn'.
+ */
 function toggleOpportunities() {
     const listWrapper = document.getElementById('opportunities-list-wrapper');
     const msgWrapper = document.getElementById('hidden-message');
