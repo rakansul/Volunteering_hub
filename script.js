@@ -143,13 +143,7 @@ function validateRegisterForm(e) {
   let ok = true;
   [first, last, email, password, confirm].forEach(clearFieldError);
 
-  // 1. Alert if any required field is empty (Shows Popup)
-  if (hasEmptyFields(form)) {
-    alert("Please fill out all required fields.");
-    ok = false;
-  }
-
-  // 2. Validate Fields (Shows Inline Red Errors)
+  // Validate Fields (Shows Inline Red Errors)
   if (!first.value.trim()) { showFieldError(first, APP_CONFIG.messages.validation.nameFirst); ok = false; }
   if (!last.value.trim()) { showFieldError(last, APP_CONFIG.messages.validation.nameLast); ok = false; }
   if (!email.value.trim()) { showFieldError(email, APP_CONFIG.messages.validation.emailRequired); ok = false; }
