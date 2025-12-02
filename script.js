@@ -7,7 +7,7 @@ const APP_CONFIG = {
     dateFilter: '#date-filter',
     mobileMenu: '.nav-menu',
     hamburger: '.hamburger',
-    backToTop: '#backToTop' // Added for Back to Top button
+    backToTop: '#backToTop'
   },
   messages: {
     validation: {
@@ -89,13 +89,13 @@ function normalizeCategoryText(text = '') {
   return text.toString().trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
-// Helper: Check if form has any empty required fields
-function hasEmptyFields(form) {
-  const requiredInputs = form.querySelectorAll('input[required], textarea[required], select[required]');
-  for (let input of requiredInputs) {
-    if (!input.value.trim()) return true;
+// Helper: Scroll to first error field
+function scrollToFirstError(form) {
+  const firstError = form.querySelector('.error');
+  if (firstError) {
+    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    firstError.focus();
   }
-  return false;
 }
 
 /* 4. FORM VALIDATION (login/register/contact) */
@@ -108,13 +108,7 @@ function validateLoginForm(e) {
   clearFieldError(email);
   clearFieldError(password);
 
-  // 1. Alert if any required field is empty (Shows Popup)
-  if (hasEmptyFields(form)) {
-    alert("Please fill out all required fields.");
-    ok = false;
-  }
-
-  // 2. Validate specific fields (Shows Inline Red Error)
+  // Validate email
   if (!email.value.trim()) {
     showFieldError(email, APP_CONFIG.messages.validation.emailRequired);
     ok = false;
@@ -123,12 +117,16 @@ function validateLoginForm(e) {
     ok = false;
   }
   
+  // Validate password
   if (!password.value.trim()) {
     showFieldError(password, APP_CONFIG.messages.validation.passwordRequired);
     ok = false;
   }
 
-  if (!ok) e.preventDefault();
+  if (!ok) {
+    e.preventDefault();
+    scrollToFirstError(form);
+  }
   return ok;
 }
 
@@ -141,19 +139,53 @@ function validateRegisterForm(e) {
   const confirm = form.querySelector('[name="confirm_password"]');
 
   let ok = true;
+  
+  // Clear all previous errors
   [first, last, email, password, confirm].forEach(clearFieldError);
 
-  // Validate Fields (Shows Inline Red Errors)
-  if (!first.value.trim()) { showFieldError(first, APP_CONFIG.messages.validation.nameFirst); ok = false; }
-  if (!last.value.trim()) { showFieldError(last, APP_CONFIG.messages.validation.nameLast); ok = false; }
-  if (!email.value.trim()) { showFieldError(email, APP_CONFIG.messages.validation.emailRequired); ok = false; }
-  else if (!validateEmail(email.value.trim())) { showFieldError(email, APP_CONFIG.messages.validation.emailInvalid); ok = false; }
-  if (!password.value.trim()) { showFieldError(password, APP_CONFIG.messages.validation.passwordRequired); ok = false; }
-  else if (password.value.length < 8) { showFieldError(password, APP_CONFIG.messages.validation.passwordLength); ok = false; }
-  if (!confirm.value.trim()) { showFieldError(confirm, APP_CONFIG.messages.validation.passwordMatch); ok = false; }
-  else if (password.value !== confirm.value) { showFieldError(confirm, APP_CONFIG.messages.validation.passwordMismatch); ok = false; }
+  // Validate first name
+  if (!first.value.trim()) {
+    showFieldError(first, APP_CONFIG.messages.validation.nameFirst);
+    ok = false;
+  }
+  
+  // Validate last name
+  if (!last.value.trim()) {
+    showFieldError(last, APP_CONFIG.messages.validation.nameLast);
+    ok = false;
+  }
+  
+  // Validate email
+  if (!email.value.trim()) {
+    showFieldError(email, APP_CONFIG.messages.validation.emailRequired);
+    ok = false;
+  } else if (!validateEmail(email.value.trim())) {
+    showFieldError(email, APP_CONFIG.messages.validation.emailInvalid);
+    ok = false;
+  }
+  
+  // Validate password
+  if (!password.value.trim()) {
+    showFieldError(password, APP_CONFIG.messages.validation.passwordRequired);
+    ok = false;
+  } else if (password.value.length < 8) {
+    showFieldError(password, APP_CONFIG.messages.validation.passwordLength);
+    ok = false;
+  }
+  
+  // Validate confirm password
+  if (!confirm.value.trim()) {
+    showFieldError(confirm, APP_CONFIG.messages.validation.passwordMatch);
+    ok = false;
+  } else if (password.value !== confirm.value) {
+    showFieldError(confirm, APP_CONFIG.messages.validation.passwordMismatch);
+    ok = false;
+  }
 
-  if (!ok) e.preventDefault();
+  if (!ok) {
+    e.preventDefault();
+    scrollToFirstError(form);
+  }
   return ok;
 }
 
@@ -166,24 +198,39 @@ function validateContactForm(e) {
   const message = form.querySelector('#contact-message');
 
   let ok = true;
+  
+  // Clear all previous errors
   [name, email, subject, message].forEach(clearFieldError);
 
-  // 1. Alert if empty (Shows Popup)
-  if (hasEmptyFields(form)) {
-    alert("Please fill out all required fields.");
+  // Validate name
+  if (!name.value.trim()) {
+    showFieldError(name, APP_CONFIG.messages.validation.nameFull);
+    ok = false;
+  }
+  
+  // Validate email
+  if (!email.value.trim()) {
+    showFieldError(email, APP_CONFIG.messages.validation.emailRequired);
+    ok = false;
+  } else if (!validateEmail(email.value.trim())) {
+    showFieldError(email, APP_CONFIG.messages.validation.emailInvalid);
+    ok = false;
+  }
+  
+  // Validate subject
+  if (!subject.value.trim()) {
+    showFieldError(subject, APP_CONFIG.messages.validation.subject);
+    ok = false;
+  }
+  
+  // Validate message
+  if (!message.value.trim()) {
+    showFieldError(message, APP_CONFIG.messages.validation.message);
     ok = false;
   }
 
-  // 2. Validate Fields (Shows Inline Red Errors)
-  if (!name.value.trim()) { showFieldError(name, APP_CONFIG.messages.validation.nameFull); ok = false; }
-  if (!email.value.trim()) { showFieldError(email, APP_CONFIG.messages.validation.emailRequired); ok = false; }
-  else if (!validateEmail(email.value.trim())) { showFieldError(email, APP_CONFIG.messages.validation.emailInvalid); ok = false; }
-  if (!subject.value.trim()) { showFieldError(subject, APP_CONFIG.messages.validation.subject); ok = false; }
-  if (!message.value.trim()) { showFieldError(message, APP_CONFIG.messages.validation.message); ok = false; }
-
   if (!ok) {
-    const firstError = form.querySelector('.error');
-    if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    scrollToFirstError(form);
     return false;
   }
 
@@ -198,37 +245,89 @@ function validateContactForm(e) {
       resultDiv.style.display = 'none';
       resultDiv.className = 'registration-message';
     }, 5000);
-  } else {
-    alert(APP_CONFIG.messages.contact.success);
-    form.reset();
   }
   return true;
 }
 
-function setupRealtimeValidation(form) {
-  if (!form) return;
-  form.addEventListener('input', (ev) => {
-    const target = ev.target;
-    if (target.matches('input, textarea')) {
-      if (target.classList.contains('error')) clearFieldError(target);
+function validateEditProfileForm(e) {
+  const form = e.target;
+  const requiredInputs = form.querySelectorAll('input[required], textarea[required], select[required]');
+  let ok = true;
+
+  // Clear all previous errors
+  requiredInputs.forEach(clearFieldError);
+
+  // Validate each required field
+  requiredInputs.forEach(input => {
+    if (!input.value.trim()) {
+      showFieldError(input, APP_CONFIG.messages.validation.required);
+      ok = false;
     }
   });
 
+  if (!ok) {
+    e.preventDefault();
+    scrollToFirstError(form);
+  }
+  return ok;
+}
+
+function setupRealtimeValidation(form) {
+  if (!form) return;
+  
+  // Clear errors as user types
+  form.addEventListener('input', (ev) => {
+    const target = ev.target;
+    if (target.matches('input, textarea')) {
+      if (target.classList.contains('error')) {
+        clearFieldError(target);
+      }
+    }
+  });
+
+  // Validate on blur (when field loses focus)
   form.addEventListener('blur', (ev) => {
     const input = ev.target;
     if (!input.matches('input, textarea')) return;
     const value = (input.value || '').trim();
     
-    // Only show inline error on blur, do not alert
+    // Check if field is required and empty
     if (input.required && !value) {
-      if (input.type === 'email') showFieldError(input, APP_CONFIG.messages.validation.emailRequired);
-      else showFieldError(input, APP_CONFIG.messages.validation.required);
+      if (input.type === 'email') {
+        showFieldError(input, APP_CONFIG.messages.validation.emailRequired);
+      } else if (input.name === 'first_name') {
+        showFieldError(input, APP_CONFIG.messages.validation.nameFirst);
+      } else if (input.name === 'last_name') {
+        showFieldError(input, APP_CONFIG.messages.validation.nameLast);
+      } else if (input.type === 'password') {
+        showFieldError(input, APP_CONFIG.messages.validation.passwordRequired);
+      } else {
+        showFieldError(input, APP_CONFIG.messages.validation.required);
+      }
       return;
     }
+    
+    // Validate email format
     if (input.type === 'email' && value && !validateEmail(value)) {
       showFieldError(input, APP_CONFIG.messages.validation.emailInvalid);
       return;
     }
+    
+    // Validate password length
+    if (input.name === 'password' && value && value.length < 8) {
+      showFieldError(input, APP_CONFIG.messages.validation.passwordLength);
+      return;
+    }
+    
+    // Validate password confirmation
+    if (input.name === 'confirm_password' && value) {
+      const passwordField = input.form.querySelector('[name="password"]');
+      if (passwordField && value !== passwordField.value) {
+        showFieldError(input, APP_CONFIG.messages.validation.passwordMismatch);
+        return;
+      }
+    }
+    
     clearFieldError(input);
   }, true); 
 }
@@ -293,8 +392,6 @@ function loadOpportunityDetail() {
   const id = parseInt(url.searchParams.get('id') || '0', 10);
   if (!id) return;
   
-  // This function is for static demo data. 
-  // In your PHP setup, the data comes from the server, so this might not find anything unless 'detailedOpportunities' exists.
   const opp = (typeof detailedOpportunities !== 'undefined') ? detailedOpportunities.find(o => o.id === id) : null;
   if (!opp) return; 
 
@@ -317,8 +414,7 @@ function loadOpportunityDetail() {
 }
 
 /* 7. PROFILE (Show/Hide Opportunities) */
-// Attached to window so onclick="..." works in HTML
-window.toggleOpportunities = function() {
+function toggleOpportunities() {
   const listWrapper = document.getElementById('opportunities-list-wrapper');
   const msgWrapper = document.getElementById('hidden-message');
   const btn = document.getElementById('toggle-btn');
@@ -340,7 +436,7 @@ window.toggleOpportunities = function() {
     btn.classList.remove('btn-secondary');
     btn.classList.add('btn-primary');
   }
-};
+}
 
 /* 8. NAV & UI */
 function toggleMobileMenu() {
@@ -369,7 +465,6 @@ function initBackToTop() {
   const backToTopBtn = getElement(APP_CONFIG.selectors.backToTop);
   if (!backToTopBtn) return;
 
-  // Show/Hide on Scroll
   window.addEventListener('scroll', () => {
     if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
       backToTopBtn.style.display = "flex";
@@ -378,7 +473,6 @@ function initBackToTop() {
     }
   });
 
-  // Scroll Up on Click
   backToTopBtn.addEventListener('click', () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
@@ -386,7 +480,7 @@ function initBackToTop() {
 
 /* 9. INIT / ATTACH EVENTS */
 function initFormValidation() {
-  // Login form: add 'novalidate' to fix alert blocking
+  // Login form
   const loginForm = document.querySelector('form[action="login_action.php"], form[action="login.php"]');
   if (loginForm) {
     loginForm.setAttribute('novalidate', 'novalidate');
@@ -394,7 +488,7 @@ function initFormValidation() {
     setupRealtimeValidation(loginForm);
   }
   
-  // Register form: add 'novalidate'
+  // Register form
   const registerForm = document.querySelector('form[action="register_action.php"], form[action="register.php"]');
   if (registerForm) {
     registerForm.setAttribute('novalidate', 'novalidate');
@@ -402,7 +496,7 @@ function initFormValidation() {
     setupRealtimeValidation(registerForm);
   }
   
-  // Contact form: add 'novalidate'
+  // Contact form
   const contactForm = getElement('#contact-form');
   if (contactForm) {
     contactForm.setAttribute('novalidate', 'novalidate');
@@ -410,16 +504,12 @@ function initFormValidation() {
     setupRealtimeValidation(contactForm);
   }
 
-  // Edit Profile form: add 'novalidate' and basic check
+  // Edit Profile form
   const editProfileForm = document.querySelector('form[action="edit_profile_action.php"]');
   if (editProfileForm) {
     editProfileForm.setAttribute('novalidate', 'novalidate');
-    editProfileForm.addEventListener('submit', (e) => {
-      if (hasEmptyFields(e.target)) {
-        e.preventDefault();
-        alert("Please fill out all required fields.");
-      }
-    });
+    editProfileForm.addEventListener('submit', validateEditProfileForm);
+    setupRealtimeValidation(editProfileForm);
   }
 }
 
@@ -449,8 +539,10 @@ function initOpportunityDetail() {
 }
 
 function initProfilePage() {
-  // Using the new window.toggleOpportunities logic in Section 7, 
-  // so no event listener needed here unless using a different ID.
+  const toggleBtn = document.getElementById('toggle-btn');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', toggleOpportunities);
+  }
 }
 
 function initMobileNavigation() {
@@ -467,30 +559,7 @@ function init() {
   initSearchAndFilters();
   initOpportunityDetail();
   initProfilePage();
-  initBackToTop(); // Start Back to Top logic
-}
-
-function toggleOpportunities() {
-    const listWrapper = document.getElementById('opportunities-list-wrapper');
-    const msgWrapper = document.getElementById('hidden-message');
-    const btn = document.getElementById('toggle-btn');
-    if (listWrapper.style.display === 'none') {
-        // ACTION: SHOW THE LIST
-        listWrapper.style.display = 'block';     // Show list
-        msgWrapper.style.display = 'none';       // Hide text message        
-        btn.textContent = 'إخفاء فُرصي';         // Change text to "Hide"        
-        // Switch button color to Green (Secondary)
-        btn.classList.remove('btn-primary');
-        btn.classList.add('btn-secondary'); 
-    } else {
-        // ACTION: HIDE THE LIST
-        listWrapper.style.display = 'none';      // Hide list
-        msgWrapper.style.display = 'block';      // Show text message        
-        btn.textContent = 'عرض فُرصي';           // Change text to "Show"        
-        // Switch button color back to Blue (Primary)
-        btn.classList.remove('btn-secondary');
-        btn.classList.add('btn-primary');
-    }
+  initBackToTop();
 }
 
 document.addEventListener('DOMContentLoaded', init);
